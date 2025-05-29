@@ -5,35 +5,18 @@
   <title>Image Tile Processor</title>
   <style>
     canvas {
-  border: 1px solid #ccc;
-  display: block;
-  margin-top: 1em;
-  max-height: calc(100vh - 200px);
-  width: auto;
-  height: auto;
-  cursor: zoom-in;
-  margin-left: auto;
-  margin-right: auto;
-}
+      border: 1px solid #ccc;
+      display: block;
+      margin-top: 1em;
+      max-height: calc(100vh - 200px);
+      width: auto;
+      height: auto;
+      cursor: pointer;
+      margin-left: auto;
+      margin-right: auto;
+    }
     label, input, button { margin: 0.5em; }
     #status { margin: 1em 0; font-style: italic; color: gray; }
-    #fullscreenCanvas {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-    #fullscreenCanvas canvas {
-      box-shadow: 0 0 20px black;
-      max-width: 100%;
-      max-height: 100%;
-      cursor: zoom-out;
-    }
   </style>
 </head>
 <body>
@@ -44,17 +27,20 @@
   <button id="processBtn" onclick="processImage()" disabled>Process Image</button>
   <div id="status">Loading palette...</div>
   <canvas id="preview"></canvas>
-  
 
   <script>
     let palette = [];
     let imageReady = false;
     let paletteReady = false;
     let inputImage;
+    let tileMap = [];
+    let currentSelection = null;
+    let tileW = 120, tileH = 160, tilesX = 0, tilesY = 0;
 
     const processBtn = document.getElementById('processBtn');
     const status = document.getElementById('status');
     const preview = document.getElementById('preview');
+    const pctx = preview.getContext('2d');
 
     function checkReady() {
       if (imageReady && paletteReady) {
@@ -132,14 +118,24 @@
       return luminance > 140 ? "black" : "white";
     }
 
+    function drawTile(tx, ty) {
+      const tile = tileMap[ty][tx];
+      const x = tx * tileW;
+      const y = ty * tileH;
+      pctx.fillStyle = `rgb(${tile.color.r},${tile.color.g},${tile.color.b})`;
+      pctx.fillRect(x, y, tileW, tileH);
+      pctx.fillStyle = getTextColor(tile.color.r, tile.color.g, tile.color.b);
+      pctx.fillText(tile.color.name, x + tileW / 2, y + 4);
+    }
+
     function processImage() {
-      const tileW = 120;
-      const tileH = 160;
-      const tilesX = parseInt(document.getElementById('tilesX').value);
+      tileW = 120;
+      tileH = 160;
+      tilesX = parseInt(document.getElementById('tilesX').value);
       const scaledW = tileW * tilesX;
       const scale = scaledW / inputImage.width;
       const scaledH = inputImage.height * scale;
-      const tilesY = Math.floor(scaledH / tileH);
+      tilesY = Math.floor(scaledH / tileH);
       const cropH = tilesY * tileH;
       const offsetY = (scaledH - cropH) / 2;
 
@@ -152,7 +148,6 @@
 
       preview.width = scaledW;
       preview.height = cropH;
-      const pctx = preview.getContext('2d');
 
       const longestName = palette.reduce((a, b) => a.name.length > b.name.length ? a : b).name;
       let fontSize = tileW;
@@ -164,31 +159,63 @@
       pctx.textAlign = "center";
       pctx.textBaseline = "top";
 
+      tileMap = [];
       for (let ty = 0; ty < tilesY; ty++) {
+        tileMap[ty] = [];
         for (let tx = 0; tx < tilesX; tx++) {
           const x = tx * tileW;
           const y = ty * tileH;
           const avg = averageColor(imageData, x, y, tileW, tileH, scaledW);
           const best = findClosestColor(avg);
-
-          pctx.fillStyle = `rgb(${best.r},${best.g},${best.b})`;
-          pctx.fillRect(x, y, tileW, tileH);
-
-          pctx.fillStyle = getTextColor(best.r, best.g, best.b);
-          pctx.fillText(best.name, x + tileW / 2, y + 4);
+          tileMap[ty][tx] = { color: best };
+          drawTile(tx, ty);
         }
       }
-
-      
       status.textContent = "Image processing complete.";
     }
 
-    
-    function hideFullImage() {
-      const full = document.getElementById('fullscreenCanvas');
-      full.innerHTML = '';
-      full.style.display = 'none';
-    }
+    preview.addEventListener('click', function (e) {
+      const rect = preview.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+      const tx = Math.floor(cx / tileW);
+      const ty = Math.floor(cy / tileH);
+      if (tx >= 0 && tx < tilesX && ty >= 0 && ty < tilesY) {
+        currentSelection = { tx, ty, originalColor: tileMap[ty][tx].color, index: palette.findIndex(p => p === tileMap[ty][tx].color) };
+        drawTile(tx, ty);
+        pctx.strokeStyle = 'yellow';
+        pctx.lineWidth = 4;
+        pctx.strokeRect(tx * tileW + 2, ty * tileH + 2, tileW - 4, tileH - 4);
+        status.textContent = `Tile selected. Use ← → to change color, Enter to confirm, Esc to cancel.`;
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (!currentSelection) return;
+      if (e.key === 'ArrowRight') {
+        currentSelection.index = (currentSelection.index + 1) % palette.length;
+        tileMap[currentSelection.ty][currentSelection.tx].color = palette[currentSelection.index];
+        drawTile(currentSelection.tx, currentSelection.ty);
+        pctx.strokeStyle = 'yellow';
+        pctx.lineWidth = 4;
+        pctx.strokeRect(currentSelection.tx * tileW + 2, currentSelection.ty * tileH + 2, tileW - 4, tileH - 4);
+      } else if (e.key === 'ArrowLeft') {
+        currentSelection.index = (currentSelection.index - 1 + palette.length) % palette.length;
+        tileMap[currentSelection.ty][currentSelection.tx].color = palette[currentSelection.index];
+        drawTile(currentSelection.tx, currentSelection.ty);
+        pctx.strokeStyle = 'yellow';
+        pctx.lineWidth = 4;
+        pctx.strokeRect(currentSelection.tx * tileW + 2, currentSelection.ty * tileH + 2, tileW - 4, tileH - 4);
+      } else if (e.key === 'Enter') {
+        currentSelection = null;
+        status.textContent = "Change confirmed.";
+      } else if (e.key === 'Escape') {
+        tileMap[currentSelection.ty][currentSelection.tx].color = currentSelection.originalColor;
+        drawTile(currentSelection.tx, currentSelection.ty);
+        currentSelection = null;
+        status.textContent = "Change canceled.";
+      }
+    });
   </script>
 </body>
 </html>
