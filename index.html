@@ -15,12 +15,19 @@
   <label for="tilesX">Tiles across:</label>
   <input type="number" id="tilesX" value="20" min="1">
   <button id="processBtn" onclick="processImage()" disabled>Process Image</button>
-  <div id="status">Loading palette...</div>
+  <div id="status">Waiting for image upload...</div>
   <canvas id="preview"></canvas>
 
   <script>
-    let palette = [];
-    let paletteReady = false;
+    let palette = [
+      { name: "Red", r: 202, g: 28, b: 37 },
+      { name: "Blue", r: 128, g: 199, b: 241 },
+      { name: "Black", r: 8, g: 40, b: 55 },
+      { name: "Brown1", r: 239, g: 206, b: 173 },
+      { name: "Brown2", r: 227, g: 171, b: 120 },
+      { name: "Brown3", r: 127, g: 68, b: 34 }
+    ];
+
     let imageReady = false;
     let inputImage;
 
@@ -28,28 +35,14 @@
     const status = document.getElementById('status');
 
     function checkReady() {
-      if (paletteReady && imageReady) {
+      if (imageReady) {
         processBtn.disabled = false;
         status.textContent = "Ready to process.";
-      } else if (!paletteReady) {
-        status.textContent = "Loading palette...";
-      } else if (!imageReady) {
+      } else {
+        processBtn.disabled = true;
         status.textContent = "Waiting for image upload...";
       }
     }
-
-    fetch('palette.json')
-      .then(response => response.json())
-      .then(data => {
-        palette = data;
-        paletteReady = true;
-        console.log("Palette loaded:", palette);
-        checkReady();
-      })
-      .catch(error => {
-        console.error("Failed to load palette:", error);
-        status.textContent = "Error loading palette.";
-      });
 
     let originalCanvas = document.createElement('canvas');
     let originalCtx = originalCanvas.getContext('2d');
