@@ -99,18 +99,17 @@
     }
 
     function getTextColor(r, g, b) {
-      // Use luminance to determine text color
       const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
       return luminance > 140 ? "black" : "white";
     }
 
     function processImage() {
-      const tilesX = parseInt(document.getElementById('tilesX').value);
+      const tileW = 120;
+      const tileH = 160;
       const imgW = inputImage.width;
       const imgH = inputImage.height;
-      const tileW = Math.floor(imgW / tilesX);
-      const tilesY = Math.floor(imgH / tileW);
-      const tileH = Math.floor(imgH / tilesY);
+      const tilesX = Math.floor(imgW / tileW);
+      const tilesY = Math.floor(imgH / tileH);
 
       const ctx = originalCanvas.getContext('2d');
       const imageData = ctx.getImageData(0, 0, imgW, imgH).data;
@@ -120,7 +119,6 @@
       preview.height = tilesY * tileH;
       const pctx = preview.getContext('2d');
 
-      // Measure max name length and determine suitable font size
       const longestName = palette.reduce((a, b) => a.name.length > b.name.length ? a : b).name;
       let fontSize = tileW;
       do {
