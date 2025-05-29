@@ -13,7 +13,7 @@
   <h2>Upload Image and Process as Tiled Output</h2>
   <input type="file" id="upload" accept="image/*">
   <label for="tilesX">Tiles across:</label>
-  <input type="number" id="tilesX" value="20" min="1">
+  <input type="number" id="tilesX" value="10" min="1">
   <button id="processBtn" onclick="processImage()" disabled>Process Image</button>
   <div id="status">Loading palette...</div>
   <canvas id="preview"></canvas>
@@ -106,17 +106,24 @@
     function processImage() {
       const tileW = 120;
       const tileH = 160;
-      const imgW = inputImage.width;
-      const imgH = inputImage.height;
-      const tilesX = Math.floor(imgW / tileW);
-      const tilesY = Math.floor(imgH / tileH);
+      const tilesX = parseInt(document.getElementById('tilesX').value);
+      const scaledW = tileW * tilesX;
+      const scale = scaledW / inputImage.width;
+      const scaledH = inputImage.height * scale;
+      const tilesY = Math.floor(scaledH / tileH);
+      const cropH = tilesY * tileH;
+      const offsetY = (scaledH - cropH) / 2;
 
-      const ctx = originalCanvas.getContext('2d');
-      const imageData = ctx.getImageData(0, 0, imgW, imgH).data;
+      const scaledCanvas = document.createElement('canvas');
+      scaledCanvas.width = scaledW;
+      scaledCanvas.height = cropH;
+      const scaledCtx = scaledCanvas.getContext('2d');
+      scaledCtx.drawImage(inputImage, 0, -offsetY, scaledW, scaledH);
+      const imageData = scaledCtx.getImageData(0, 0, scaledW, cropH).data;
 
       const preview = document.getElementById('preview');
-      preview.width = tilesX * tileW;
-      preview.height = tilesY * tileH;
+      preview.width = scaledW;
+      preview.height = cropH;
       const pctx = preview.getContext('2d');
 
       const longestName = palette.reduce((a, b) => a.name.length > b.name.length ? a : b).name;
@@ -133,7 +140,7 @@
         for (let tx = 0; tx < tilesX; tx++) {
           const x = tx * tileW;
           const y = ty * tileH;
-          const avg = averageColor(imageData, x, y, tileW, tileH, imgW);
+          const avg = averageColor(imageData, x, y, tileW, tileH, scaledW);
           const best = findClosestColor(avg);
 
           pctx.fillStyle = `rgb(${best.r},${best.g},${best.b})`;
