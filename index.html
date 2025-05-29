@@ -176,8 +176,10 @@
 
     preview.addEventListener('click', function (e) {
       const rect = preview.getBoundingClientRect();
-      const cx = e.clientX - rect.left;
-      const cy = e.clientY - rect.top;
+      const scaleX = preview.width / rect.width;
+      const scaleY = preview.height / rect.height;
+      const cx = (e.clientX - rect.left) * scaleX;
+      const cy = (e.clientY - rect.top) * scaleY;
       const tx = Math.floor(cx / tileW + 0.0001);
       const ty = Math.floor(cy / tileH + 0.0001);
       if (tx >= 0 && tx < tilesX && ty >= 0 && ty < tilesY) {
