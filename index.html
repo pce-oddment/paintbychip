@@ -178,8 +178,8 @@
       const rect = preview.getBoundingClientRect();
       const cx = e.clientX - rect.left;
       const cy = e.clientY - rect.top;
-      const tx = Math.floor(cx / tileW);
-      const ty = Math.floor(cy / tileH);
+      const tx = Math.floor(cx / tileW + 0.0001);
+      const ty = Math.floor(cy / tileH + 0.0001);
       if (tx >= 0 && tx < tilesX && ty >= 0 && ty < tilesY) {
         currentSelection = { tx, ty, originalColor: tileMap[ty][tx].color, index: palette.findIndex(p => p === tileMap[ty][tx].color) };
         drawTile(tx, ty);
@@ -207,6 +207,7 @@
         pctx.lineWidth = 4;
         pctx.strokeRect(currentSelection.tx * tileW + 2, currentSelection.ty * tileH + 2, tileW - 4, tileH - 4);
       } else if (e.key === 'Enter') {
+        drawTile(currentSelection.tx, currentSelection.ty);
         currentSelection = null;
         status.textContent = "Change confirmed.";
       } else if (e.key === 'Escape') {
