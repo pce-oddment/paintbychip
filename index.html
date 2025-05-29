@@ -4,9 +4,26 @@
   <meta charset="UTF-8">
   <title>Image Tile Processor</title>
   <style>
-    canvas { border: 1px solid #ccc; display: block; margin-top: 1em; }
+    canvas { border: 1px solid #ccc; display: block; margin-top: 1em; max-width: 100%; height: auto; cursor: zoom-in; }
     label, input, button { margin: 0.5em; }
     #status { margin: 1em 0; font-style: italic; color: gray; }
+    #fullscreenCanvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    #fullscreenCanvas canvas {
+      box-shadow: 0 0 20px black;
+      max-width: 100%;
+      max-height: 100%;
+      cursor: zoom-out;
+    }
   </style>
 </head>
 <body>
@@ -17,6 +34,7 @@
   <button id="processBtn" onclick="processImage()" disabled>Process Image</button>
   <div id="status">Loading palette...</div>
   <canvas id="preview"></canvas>
+  <div id="fullscreenCanvas" style="display:none" onclick="hideFullImage()"></div>
 
   <script>
     let palette = [];
@@ -26,6 +44,7 @@
 
     const processBtn = document.getElementById('processBtn');
     const status = document.getElementById('status');
+    const preview = document.getElementById('preview');
 
     function checkReady() {
       if (imageReady && paletteReady) {
@@ -121,7 +140,6 @@
       scaledCtx.drawImage(inputImage, 0, -offsetY, scaledW, scaledH);
       const imageData = scaledCtx.getImageData(0, 0, scaledW, cropH).data;
 
-      const preview = document.getElementById('preview');
       preview.width = scaledW;
       preview.height = cropH;
       const pctx = preview.getContext('2d');
@@ -150,6 +168,25 @@
           pctx.fillText(best.name, x + tileW / 2, y + 4);
         }
       }
+
+      preview.onclick = () => showFullImage(preview);
+    }
+
+    function showFullImage(canvas) {
+      const full = document.getElementById('fullscreenCanvas');
+      full.innerHTML = '';
+      const fullCanvas = document.createElement('canvas');
+      fullCanvas.width = canvas.width;
+      fullCanvas.height = canvas.height;
+      fullCanvas.getContext('2d').drawImage(canvas, 0, 0);
+      full.appendChild(fullCanvas);
+      full.style.display = 'flex';
+    }
+
+    function hideFullImage() {
+      const full = document.getElementById('fullscreenCanvas');
+      full.innerHTML = '';
+      full.style.display = 'none';
     }
   </script>
 </body>
