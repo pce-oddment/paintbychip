@@ -98,6 +98,12 @@
       return bestMatch;
     }
 
+    function getTextColor(r, g, b) {
+      // Use luminance to determine text color
+      const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+      return luminance > 140 ? "black" : "white";
+    }
+
     function processImage() {
       const tilesX = parseInt(document.getElementById('tilesX').value);
       const imgW = inputImage.width;
@@ -113,9 +119,17 @@
       preview.width = tilesX * tileW;
       preview.height = tilesY * tileH;
       const pctx = preview.getContext('2d');
-      pctx.font = `${tileH * 0.4}px sans-serif`;
+
+      // Measure max name length and determine suitable font size
+      const longestName = palette.reduce((a, b) => a.name.length > b.name.length ? a : b).name;
+      let fontSize = tileW;
+      do {
+        fontSize--;
+        pctx.font = `${fontSize}px sans-serif`;
+      } while (pctx.measureText(longestName).width > tileW - 8);
+
       pctx.textAlign = "center";
-      pctx.textBaseline = "middle";
+      pctx.textBaseline = "top";
 
       for (let ty = 0; ty < tilesY; ty++) {
         for (let tx = 0; tx < tilesX; tx++) {
@@ -126,8 +140,9 @@
 
           pctx.fillStyle = `rgb(${best.r},${best.g},${best.b})`;
           pctx.fillRect(x, y, tileW, tileH);
-          pctx.fillStyle = "white";
-          pctx.fillText(best.name, x + tileW / 2, y + tileH / 2);
+
+          pctx.fillStyle = getTextColor(best.r, best.g, best.b);
+          pctx.fillText(best.name, x + tileW / 2, y + 4);
         }
       }
     }
