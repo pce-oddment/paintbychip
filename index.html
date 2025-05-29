@@ -21,6 +21,7 @@
     let palette = [];
     let paletteReady = false;
     let imageReady = false;
+    let inputImage;
 
     const processBtn = document.getElementById('processBtn');
 
@@ -40,7 +41,6 @@
         console.error("Failed to load palette:", error);
       });
 
-    let inputImage = new Image();
     let originalCanvas = document.createElement('canvas');
     let originalCtx = originalCanvas.getContext('2d');
 
@@ -49,6 +49,7 @@
       if (!file) return;
       const reader = new FileReader();
       reader.onload = function (event) {
+        inputImage = new Image();
         inputImage.onload = () => {
           originalCanvas.width = inputImage.width;
           originalCanvas.height = inputImage.height;
