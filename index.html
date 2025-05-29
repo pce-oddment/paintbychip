@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Image Tile Processor</title>
+  <style>
+    canvas { border: 1px solid #ccc; display: block; margin-top: 1em; }
+    label, input, button { margin: 0.5em; }
+  </style>
+</head>
+<body>
+  <h2>Upload Image and Process as Tiled Output</h2>
+  <input type="file" id="upload" accept="image/*">
+  <label for="tilesX">Tiles across:</label>
+  <input type="number" id="tilesX" value="20" min="1">
+  <button onclick="processImage()">Process Image</button>
+  <br>
+  <canvas id="preview"></canvas>
+
+  <script>
+    const palette = [
+      { name: "Red", r: 202, g: 28, b: 37 },
+      { name: "Blue", r: 128, g: 199, b: 241 },
+      { name: "Black", r: 8, g: 40, b: 55 },
+      { name: "Brown1", r: 239, g: 206, b: 173 },
+      { name: "Brown2", r: 227, g: 171, b: 120 },
+      { name: "Brown3", r: 127, g: 68, b: 34 }
+    ];
+
+    let inputImage = new Image();
+    let originalCanvas = document.createElement('canvas');
+    let originalCtx = originalCanvas.getContext('2d');
+
+    document.getElementById('upload').addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        inputImage.onload = () => {
+          originalCanvas.width = inputImage.width;
+          originalCanvas.height = inputImage.height;
+          originalCtx.drawImage(inputImage, 0, 0);
+        };
+        inputImage.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function averageColor(data, startX, startY, tileW, tileH, imgWidth) {
+      let r = 0, g = 0, b = 0, count = 0;
+      for (let y = startY; y < startY + tileH; y++) {
+        for (let x = startX; x < startX + tileW; x++) {
+          let idx = (y * imgWidth + x) * 4;
+          r += data[idx];
+          g += data[idx + 1];
+          b += data[idx + 2];
+          count++;
+        }
+      }
+      return { r: r / count, g: g / count, b: b / count };
+    }
+
+    function findClosestColor(color) {
+      let bestMatch = palette[0];
+      let minDist = Infinity;
+      for (const p of palette) {
+        let dist = (p.r - color.r) ** 2 + (p.g - color.g) ** 2 + (p.b - color.b) ** 2;
+        if (dist < minDist) {
+          minDist = dist;
+          bestMatch = p;
+        }
+      }
+      return bestMatch;
+    }
+
+    function processImage() {
+      const tilesX = parseInt(document.getElementById('tilesX').value);
+      const imgW = inputImage.width;
+      const imgH = inputImage.height;
+      const tileW = Math.floor(imgW / tilesX);
+      const tilesY = Math.floor(imgH / tileW);
+      const tileH = Math.floor(imgH / tilesY);
+
+      const ctx = originalCanvas.getContext('2d');
+      const imageData = ctx.getImageData(0, 0, imgW, imgH).data;
+
+      const preview = document.getElementById('preview');
+      preview.width = tilesX * tileW;
+      preview.height = tilesY * tileH;
+      const pctx = preview.getContext('2d');
+      pctx.font = `${tileH * 0.4}px sans-serif`;
+      pctx.textAlign = "center";
+      pctx.textBaseline = "middle";
+
+      for (let ty = 0; ty < tilesY; ty++) {
+        for (let tx = 0; tx < tilesX; tx++) {
+          const x = tx * tileW;
+          const y = ty * tileH;
+          const avg = averageColor(imageData, x, y, tileW, tileH, imgW);
+          const best = findClosestColor(avg);
+
+          pctx.fillStyle = `rgb(${best.r},${best.g},${best.b})`;
+          pctx.fillRect(x, y, tileW, tileH);
+          pctx.fillStyle = "white";
+          pctx.fillText(best.name, x + tileW / 2, y + tileH / 2);
+        }
+      }
+    }
+  </script>
+</body>
+</html>
