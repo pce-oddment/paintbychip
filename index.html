@@ -44,7 +44,7 @@
   <button id="processBtn" onclick="processImage()" disabled>Process Image</button>
   <div id="status">Loading palette...</div>
   <canvas id="preview"></canvas>
-  <div id="fullscreenCanvas" style="display:none" onclick="hideFullImage()"></div>
+  
 
   <script>
     let palette = [];
@@ -179,23 +179,11 @@
         }
       }
 
-      preview.onclick = () => showFullImage(preview);
+      
       status.textContent = "Image processing complete.";
     }
 
-    function showFullImage(canvas) {
-  const full = document.getElementById('fullscreenCanvas');
-  full.innerHTML = '';
-  const fullCanvas = document.createElement('canvas');
-  fullCanvas.width = canvas.width;
-  fullCanvas.height = canvas.height;
-  fullCanvas.style.width = canvas.width + 'px';
-  fullCanvas.style.height = canvas.height + 'px';
-  fullCanvas.getContext('2d').drawImage(canvas, 0, 0);
-  full.appendChild(fullCanvas);
-  full.style.display = 'flex';
-}
-
+    
     function hideFullImage() {
       const full = document.getElementById('fullscreenCanvas');
       full.innerHTML = '';
