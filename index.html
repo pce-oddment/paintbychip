@@ -19,15 +19,22 @@
 
   <script>
     let palette = [];
+    let paletteReady = false;
+    let imageReady = false;
 
     const processBtn = document.getElementById('processBtn');
+
+    function checkReady() {
+      processBtn.disabled = !(paletteReady && imageReady);
+    }
 
     fetch('palette.json')
       .then(response => response.json())
       .then(data => {
         palette = data;
-        processBtn.disabled = false;
+        paletteReady = true;
         console.log("Palette loaded:", palette);
+        checkReady();
       })
       .catch(error => {
         console.error("Failed to load palette:", error);
@@ -46,6 +53,8 @@
           originalCanvas.width = inputImage.width;
           originalCanvas.height = inputImage.height;
           originalCtx.drawImage(inputImage, 0, 0);
+          imageReady = true;
+          checkReady();
         };
         inputImage.src = event.target.result;
       };
