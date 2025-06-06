@@ -184,7 +184,27 @@
       const ty = Math.floor(cy / tileH + 0.0001);
       if (tx >= 0 && tx < tilesX && ty >= 0 && ty < tilesY) {
         if (currentSelection) drawTile(currentSelection.tx, currentSelection.ty);
-        currentSelection = { tx, ty, originalColor: tileMap[ty][tx].color, index: palette.findIndex(p => p === tileMap[ty][tx].color) };
+        const imageData = preview.getContext('2d').getImageData(tx * tileW, ty * tileH, tileW, tileH);
+        const uniqueSubset = [];
+        const seen = new Set();
+        for (let i = 0; i < imageData.data.length; i += 4) {
+          const r = imageData.data[i];
+          const g = imageData.data[i + 1];
+          const b = imageData.data[i + 2];
+          let best = findClosestColor({ r, g, b });
+          const key = `${best.r},${best.g},${best.b}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            uniqueSubset.push(best);
+          }
+        }
+        currentSelection = {
+          tx,
+          ty,
+          originalColor: tileMap[ty][tx].color,
+          paletteSubset: uniqueSubset,
+          index: uniqueSubset.findIndex(p => p === tileMap[ty][tx].color)
+        };
         drawTile(tx, ty);
         pctx.strokeStyle = 'yellow';
         pctx.lineWidth = 4;
@@ -196,15 +216,15 @@
     document.addEventListener('keydown', function (e) {
       if (!currentSelection) return;
       if (e.key === 'ArrowRight') {
-        currentSelection.index = (currentSelection.index + 1) % palette.length;
-        tileMap[currentSelection.ty][currentSelection.tx].color = palette[currentSelection.index];
+        currentSelection.index = (currentSelection.index + 1) % currentSelection.paletteSubset.length;
+        tileMap[currentSelection.ty][currentSelection.tx].color = currentSelection.paletteSubset[currentSelection.index];
         drawTile(currentSelection.tx, currentSelection.ty);
         pctx.strokeStyle = 'yellow';
         pctx.lineWidth = 4;
         pctx.strokeRect(currentSelection.tx * tileW + 2, currentSelection.ty * tileH + 2, tileW - 4, tileH - 4);
       } else if (e.key === 'ArrowLeft') {
-        currentSelection.index = (currentSelection.index - 1 + palette.length) % palette.length;
-        tileMap[currentSelection.ty][currentSelection.tx].color = palette[currentSelection.index];
+        currentSelection.index = (currentSelection.index - 1 + currentSelection.paletteSubset.length) % currentSelection.paletteSubset.length;
+        tileMap[currentSelection.ty][currentSelection.tx].color = currentSelection.paletteSubset[currentSelection.index];
         drawTile(currentSelection.tx, currentSelection.ty);
         pctx.strokeStyle = 'yellow';
         pctx.lineWidth = 4;
