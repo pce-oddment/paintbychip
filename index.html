@@ -183,6 +183,7 @@
       const tx = Math.floor(cx / tileW + 0.0001);
       const ty = Math.floor(cy / tileH + 0.0001);
       if (tx >= 0 && tx < tilesX && ty >= 0 && ty < tilesY) {
+        if (currentSelection) drawTile(currentSelection.tx, currentSelection.ty);
         currentSelection = { tx, ty, originalColor: tileMap[ty][tx].color, index: palette.findIndex(p => p === tileMap[ty][tx].color) };
         drawTile(tx, ty);
         pctx.strokeStyle = 'yellow';
